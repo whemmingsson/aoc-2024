@@ -5,43 +5,24 @@ module.exports = class Day {
         const result = [];
         Parser.readRaw(__dirname, false).split("\n").forEach(line => {
             result.push(line.match(/\d+/g).map(v => parseInt(v)))
-
         });
-
-        const isIncreasing = (a, b) => {
-            return b < a;
-        }
-
-        const isDecreasing = (a, b) => {
-            return b > a;
-        }
 
         const isUnsafe = (report) => {
             let isDec, isInc = false;
 
             for (let i = 0; i < report.length - 1; i++) {
                 const l1 = report[i], l2 = report[i + 1];
-                if (Math.abs(l1 - l2) > 3) {
-                    console.log(l1, l2, `distance is greater than 3`)
+                if (l1 === l2 || Math.abs(l1 - l2) > 3) {
                     return true;
                 }
-
-                if (l1 === l2) {
-                    console.log(l1, l2, `are equal`)
-                    return true;
-                }
-
-                const isD = isDecreasing(l1, l2);
-                const isI = isIncreasing(l1, l2);
 
                 if (i === 0) {
-                    isDec = isD;
-                    isInc = isI;
+                    isDec = l2 > l1;
+                    isInc = l2 < l1;
                     continue;
                 }
 
-                if (isDec && isI || isInc && isD) {
-                    console.log(l1, l2, "broke pattern")
+                if (isDec && l2 < l1 || isInc && l2 > l1) {
                     return true;
                 }
             }
@@ -60,10 +41,7 @@ module.exports = class Day {
             for (let i = 0; i < report.length; i++) {
                 const nReport = [...report];
                 nReport.splice(i, 1);
-                console.log("Testing:", nReport);
-                const unsafe = isUnsafe(nReport);
-                if (!unsafe) {
-                    console.log(nReport, "is actually safe!")
+                if (!isUnsafe(nReport)) {
                     safeWithDampeningCount++;
                     break;
                 }
@@ -71,6 +49,5 @@ module.exports = class Day {
         })
 
         console.log("Part 2", safeWithDampeningCount + safeReportCount);
-
     };
 }
