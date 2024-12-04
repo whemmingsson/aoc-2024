@@ -58,13 +58,8 @@ module.exports = class Day {
 
     static run() {
         const mtx = [];
-        const data = Parser.readRaw(__dirname, false).split("\n");
-        data.forEach((l) => {
-            const line = [];
-            l.trimEnd().split("").forEach(c => {
-                line.push(c);
-            })
-            mtx.push(line);
+        Parser.readRaw(__dirname, false).split("\n").forEach((l) => {
+            mtx.push([...l.trimEnd().split("")]);
         });
 
         console.log("Part 1", this.part1(mtx));
