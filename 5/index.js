@@ -14,7 +14,6 @@ module.exports = class Day {
             }
         });
 
-        // index rules:
         const rulesIndexed = {};
         rules.forEach(r => {
             const { L, R } = r;
@@ -37,33 +36,22 @@ module.exports = class Day {
         const validate = (u) => {
             let valid = true;
             for (let i = 0; i < u.length; i++) {
-
                 const page = u[i];
                 const rules = rulesIndexed[page];
                 for (let j = 0; j < rules.length; j++) {
                     const rule = rules[j];
                     const other = otherPage(rule, page);
                     if (u.indexOf(other) < 0) {
-                        // Did not find other page in update set, skip
                         continue;
                     }
 
                     const indexOfPage = u.indexOf(page);
                     const indexOfOther = u.indexOf(other);
 
-                    // If page is to the left, other must be to to the right. 
-                    if (rule.L === page && indexOfOther < indexOfPage) {
-
+                    if ((rule.L === page && indexOfOther < indexOfPage) || (rule.R === page && indexOfOther > indexOfPage)) {
                         valid = false;
                         break;
                     }
-
-                    // If page is to the right, other must be to to the left. 
-                    if (rule.R === page && indexOfOther > indexOfPage) {
-                        valid = false;
-                        break;
-                    }
-
                 }
 
                 if (!valid) {
@@ -71,18 +59,10 @@ module.exports = class Day {
                 }
             }
 
-            if (valid) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            return valid;
         }
 
-
-
         const reorder = (u) => {
-            const old = [...u];
             const swap = (a, b) => {
                 let t = u[a];
                 u[a] = u[b];
@@ -96,31 +76,19 @@ module.exports = class Day {
                     const rule = rules[j];
                     const other = otherPage(rule, page);
                     if (u.indexOf(other) < 0) {
-                        // Did not find other page in update set, skip
                         continue;
                     }
 
                     const indexOfPage = u.indexOf(page);
                     const indexOfOther = u.indexOf(other);
 
-                    // If page is to the left, other must be to to the right. 
-                    if (rule.L === page && indexOfOther < indexOfPage) {
-                        swap(indexOfPage, indexOfOther);
-                        break;
-                    }
-
-                    // If page is to the right, other must be to to the left. 
-                    if (rule.R === page && indexOfOther > indexOfPage) {
+                    if ((rule.L === page && indexOfOther < indexOfPage) || (rule.R === page && indexOfOther > indexOfPage)) {
                         swap(indexOfPage, indexOfOther);
                         break;
                     }
                 }
             }
 
-            console.log("")
-            console.log("Original update:", old);
-            console.log("Reordered update:", u);
-            console.log("")
             return u;
         }
 
