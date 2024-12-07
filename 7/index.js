@@ -7,7 +7,6 @@ module.exports = class Day {
             expressions.push({ total: parseInt(p[0]), operands: p[1].trim().split(" ").map(o => parseInt(o)) });
         })
 
-
         const testAux = (e) => {
             const test = (a, b, i) => {
                 if (i > e.operands.length || !a || !b) {
@@ -27,11 +26,10 @@ module.exports = class Day {
                     || test(c, e.operands[i], i + 1)
             }
 
-            return test(e.operands[0], e.operands[1], 2)
+            return test(e.operands[0], e.operands[1], 2);
         }
 
-        const sum = expressions.filter(e => testAux(e)).map(e => e.total).reduce((a, c) => a + c, 0);
-        console.log("Part 1/2", sum);
+        console.log("Part 1/2", expressions.filter(e => testAux(e)).map(e => e.total).reduce((a, c) => a + c, 0));
     }
 }
 
