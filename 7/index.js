@@ -16,18 +16,22 @@ module.exports = class Day {
 
                 const s = a + b;
                 const m = a * b;
+                const c = parseInt(a + "" + b)
 
-                if ((m === e.total || s === e.total) && i === e.operands.length) {
+                if ((m === e.total || s === e.total || c === e.total) && i === e.operands.length) {
                     return true;
                 }
 
-                return test(s, e.operands[i], i + 1) || test(m, e.operands[i], i + 1)
+                return test(s, e.operands[i], i + 1)
+                    || test(m, e.operands[i], i + 1)
+                    || test(c, e.operands[i], i + 1)
             }
 
             return test(e.operands[0], e.operands[1], 2)
         }
 
         const sum = expressions.filter(e => testAux(e)).map(e => e.total).reduce((a, c) => a + c, 0);
-        console.log("Part 1", sum);
+        console.log("Part 1/2", sum);
     }
 }
+
