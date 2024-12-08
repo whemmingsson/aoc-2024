@@ -18,35 +18,57 @@ module.exports = class Day {
                 antennas[v].push({ r, c });
             }
         }
-        const w = map.length;
-        const h = map[0].length;
 
         const dist = (a, b) => {
             return { r: a.r - b.r, c: a.c - b.c }
         }
 
-        const isAntinodeAt = (pos) => map[pos.r][pos.c] === "#";
+        const isValidAntinode = (pos) => map[pos.r] && map[pos.r][pos.c] && map[pos.r][pos.c] !== "#";
 
-        const isValidAntinode = (pos) => pos.c >= 0 && pos.c <= w - 1 && pos.r >= 0 && pos.r <= h - 1 && !isAntinodeAt(pos);
-
-        const constructAntinodes = (a, b) => {
+        const constructAntinodes = (a, b, part1) => {
             const d = dist(b, a);
-            return [{ c: a.c - d.c, r: a.r - d.r }, { c: b.c + d.c, r: b.r + d.r }];
+            if (part1) {
+                return [{ c: a.c - d.c, r: a.r - d.r }, { c: b.c + d.c, r: b.r + d.r }];
+            }
+
+            const antinodes = [];
+            let c = a.c, r = a.r;
+            while (c <= map.length && r <= map[0].length) {
+                antinodes.push({ r, c });
+                c += d.c;
+                r += d.r;
+            }
+
+            c = a.c;
+            r = a.r;
+            while (c >= 0 && r >= 0) {
+                antinodes.push({ r, c });
+                c -= d.c;
+                r -= d.r;
+            }
+            return antinodes;
         }
 
         let totalAntiNodes = 0;
         Object.keys(antennas).forEach(antenna => {
-            const positions = antennas[antenna];
-            for (let i = 0; i < positions.length; i++) {
-                for (let j = i + 1; j < positions.length; j++) {
-                    constructAntinodes(positions[i], positions[j]).filter(isValidAntinode).forEach(an => {
-                        map[an.r][an.c] = "#";
-                        totalAntiNodes++;
-                    });
+            for (let i = 0; i < antennas[antenna].length; i++) {
+                for (let j = i + 1; j < antennas[antenna].length; j++) {
+                    constructAntinodes(antennas[antenna][i], antennas[antenna][j], false)
+                        .filter(isValidAntinode)
+                        .forEach(antinode => {
+                            if (map[antinode.r][antinode.c] !== "#") {
+                                map[antinode.r][antinode.c] = "#";
+                                totalAntiNodes++;
+                            }
+                        });
                 }
             }
         });
 
-        console.log("Part 1", totalAntiNodes);
+        map.forEach(r => {
+            console.log(r.join(""));
+        });
+
+        console.log("Result", totalAntiNodes);
     }
 }
