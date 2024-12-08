@@ -2,47 +2,41 @@ const Parser = require("../common/parser.js");
 module.exports = class Day {
     static run() {
         const map = [];
-        Parser.readRaw(__dirname, false).split("\n").forEach(r => {
-            map.push([...r.trim().split("")]);
-        })
-
         const antennas = {};
         const regex = /[a-z]|[A-Z]|\d/;
-        for (let r = 0; r < map.length; r++) {
-            for (let c = 0; c < map[r].length; c++) {
-                const v = map[r][c];
-                if (!regex.test(v)) continue;
+        Parser.readRaw(__dirname, false).split("\n").forEach((r, ri) => {
+            map[ri] = [];
+            r.trim().split("").forEach((v, ci) => {
+                map[ri].push(v);
+                if (!regex.test(v)) return;
                 if (!antennas[v]) {
                     antennas[v] = [];
                 }
-                antennas[v].push({ r, c });
-            }
-        }
+                antennas[v].push({ r: ri, c: ci });
+            });
+        });
 
-        const dist = (a, b) => {
-            return { r: a.r - b.r, c: a.c - b.c }
-        }
+        console.log(antennas);
+        const w = map.length;
+        console.log(w);
 
-        const isValidAntinode = (pos) => map[pos.r] && map[pos.r][pos.c] && map[pos.r][pos.c] !== "#";
-
-        const constructAntinodes = (a, b, part1) => {
-            const d = dist(b, a);
-            if (part1) {
-                return [{ c: a.c - d.c, r: a.r - d.r }, { c: b.c + d.c, r: b.r + d.r }];
-            }
+        const constructAntinodes = (a, b) => {
+            const d = { r: b.r - a.r, c: b.c - a.c }
+            const inBounds = (r, c) => c < map.length && r < map[0].length && c >= 0 && r >= 0;
 
             const antinodes = [];
             let c = a.c, r = a.r;
-            while (c <= map.length && r <= map[0].length) {
-                antinodes.push({ r, c });
+            while (inBounds(r, c)) {
+                if (!foundAntiNodes[key({ r, c })]) antinodes.push({ r, c });
                 c += d.c;
                 r += d.r;
             }
 
             c = a.c;
             r = a.r;
-            while (c >= 0 && r >= 0) {
-                antinodes.push({ r, c });
+            while (inBounds(r, c)) {
+                const k = key({ r, c });
+                if (!foundAntiNodes[key({ r, c })]) antinodes.push({ r, c });
                 c -= d.c;
                 r -= d.r;
             }
@@ -50,25 +44,30 @@ module.exports = class Day {
         }
 
         let totalAntiNodes = 0;
-        Object.keys(antennas).forEach(antenna => {
-            for (let i = 0; i < antennas[antenna].length; i++) {
-                for (let j = i + 1; j < antennas[antenna].length; j++) {
-                    constructAntinodes(antennas[antenna][i], antennas[antenna][j], false)
-                        .filter(isValidAntinode)
-                        .forEach(antinode => {
-                            if (map[antinode.r][antinode.c] !== "#") {
-                                map[antinode.r][antinode.c] = "#";
-                                totalAntiNodes++;
-                            }
-                        });
+        let sneakyCount = 0;
+        let foundAntiNodes = {};
+        let key = (pos) => pos.r + "_" + pos.c;
+        Object.keys(antennas).forEach(k => {
+            for (let i = 0; i < antennas[k].length; i++) {
+                for (let j = i + 1; j < antennas[k].length; j++) {
+                    const nodes = constructAntinodes(antennas[k][i], antennas[k][j]);
+                    for (let n = 0; n < nodes.length; n++) {
+                        let antinode = nodes[n];
+                        const nk = key(antinode);
+                        console.log(antinode, map[antinode.r][antinode.c]);
+                        if (!foundAntiNodes[nk]) {
+                            foundAntiNodes[nk] = true;
+                            totalAntiNodes++;
+                        }
+                        else {
+                            console.log("    Sneaky", antinode, map[antinode.r][antinode.c]);
+                            sneakyCount++;
+                        }
+                    }
                 }
             }
         });
 
-        map.forEach(r => {
-            console.log(r.join(""));
-        });
-
-        console.log("Result", totalAntiNodes);
+        console.log("Result", totalAntiNodes, sneakyCount);
     }
 }
