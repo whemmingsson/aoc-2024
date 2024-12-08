@@ -15,7 +15,7 @@ module.exports = class Day {
 
                 const s = a + b;
                 const m = a * b;
-                const c = parseInt(a + "" + b)
+                const c = parseInt(a + "" + b);
 
                 if ((m === e.total || s === e.total || c === e.total) && i === e.operands.length) {
                     return true;
