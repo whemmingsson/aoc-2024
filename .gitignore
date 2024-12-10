@@ -110,5 +110,4 @@ dist
 # VS code
 .DS_Store
 
-8/vis/data.js
-6/vis/data.js
+*/vis/data.js
