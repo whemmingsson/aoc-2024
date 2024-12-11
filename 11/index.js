@@ -48,7 +48,7 @@ module.exports = class Day {
 
         console.log("Initial stones")
         console.log(stones);
-        for (let i = 0; i < 75; i++) {
+        for (let i = 0; i < 25; i++) {
             blink();
             console.log("After", i + 1, "blinks");
             console.log(totalStones);
