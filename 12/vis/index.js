@@ -64,15 +64,6 @@ const getSides = (plots, plantId) => {
     perimiter.sort((a, b) => a.x - b.x);
     console.log(perimiter.map(p => p.index));
 
-    let current = perimiter[0];
-    for (let i = 1; i < perimiter.length; i++) {
-        // Find all neighbors of current
-        const p = perimiter[i];
-        // Find all neighbors
-    }
-
-
-
     return perimiter.length;
 }
 
