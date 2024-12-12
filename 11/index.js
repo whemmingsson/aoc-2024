@@ -2,57 +2,47 @@
 const Parser = require("../common/parser.js");
 module.exports = class Day {
     static run() {
-        const stones = Parser.readRaw(__dirname, false)
+        let d = {};
+
+        Parser.readRaw(__dirname, false)
             .trim()
             .split(" ")
-            .map((v) => parseInt(v));
+            .map((v) => d[v] = 1);
 
-        let totalStones = stones.length;
-
-        const isEvenNumberOfDigits = (stone) => {
-            return stone.toString().length % 2 === 0;
+        const split = (s) => {
+            return { a: s.slice(0, s.length / 2), b: s.slice(s.length / 2, s.length) };
         }
 
-        const split = (stoneStr) => {
-            const len = stoneStr.length / 2;
-            const left = stoneStr.slice(0, len);
-            const right = stoneStr.slice(len, stoneStr.length);
-            return { left, right };
+        const add = (d, k, v) => {
+            if (!d[k]) {
+                d[k] = 0;
+            }
+            d[k] += v;
         }
 
-        const blink = () => {
-            const stonesToSplit = [];
-            for (let i = 0; i < stones.length; i++) {
-                const stone = stones[i];
-
-                if (stone === 0) {
-                    stones[i] = 1;
+        const blinkPt2 = () => {
+            const nd = {};
+            Object.keys(d).forEach(stone => {
+                if (stone == 0) {
+                    add(nd, 1, d[stone]);
                 }
-                else if (isEvenNumberOfDigits(stone)) {
-                    stonesToSplit.push({ index: i, stone });
+                else if (stone.length % 2 === 0) {
+                    const { a, b } = split(stone);
+                    add(nd, parseInt(a), d[stone]);
+                    add(nd, parseInt(b), d[stone]);
                 }
                 else {
-                    stones[i] = stone * 2024;
+                    add(nd, stone * 2024, d[stone]);
                 }
-            }
+            });
 
-            for (let j = stonesToSplit.length - 1; j >= 0; j--) {
-                const { stone, index } = stonesToSplit[j];
-                const stoneStr = stone.toString();
-                const newStones = split(stoneStr);
-                stones[index] = parseInt(newStones.left);
-                stones.splice(index + 1, 0, parseInt(newStones.right));
-                totalStones++;
-            }
+            d = nd;
         }
 
-        console.log("Initial stones")
-        console.log(stones);
-        for (let i = 0; i < 25; i++) {
-            blink();
-            console.log("After", i + 1, "blinks");
-            console.log(totalStones);
+        for (let i = 0; i < 75; i++) {
+            blinkPt2();
         }
 
+        console.log(Object.keys(d).map(k => d[k]).reduce((a, c) => a + c, 0));
     }
 }
