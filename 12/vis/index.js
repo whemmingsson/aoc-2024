@@ -1,4 +1,4 @@
-const useExample = true;
+const useExample = false;
 
 // Display variables
 const cellSize = 50;
@@ -17,7 +17,7 @@ const plantIdDict = {};
 
 const inBounds = (x, y) => x >= 0 && x < map.length && y >= 0 && y < map[0].length;
 
-const getPerimiter = (plots, plantId) => {
+const getPerimeter = (plots, plantId) => {
     const originalPlantId = plantId[0];
     let perimTotal = 0;
     plots.forEach(p => {
@@ -42,29 +42,76 @@ const getNeighbors = (list) => {
 }
 
 const getSides = (plots, plantId) => {
+    console.log("GETTING SIDES FOR PLOT=", plantId);
     const originalPlantId = plantId[0];
-    const k = (a, b) => {
-        return a + "_" + b;
-    }
     const perimiter = [];
-    const foundIndecies = {};
     let i = 0;
     plots.forEach(p => {
         cardinalVectors.forEach(vec => {
-            if (!inBounds(p.x + vec.x, p.y + vec.y) || map[p.y + vec.y][p.x + vec.x].v !== originalPlantId && !foundIndecies[k(p.x + vec.x, p.y + vec.y)]) {
-                perimiter.push({ x: p.x + vec.x, y: p.y + vec.y, visited: false, index: i });
-                foundIndecies[k(p.x + vec.x, p.y + vec.y)] = true;
-                i++;
+            if ((!inBounds(p.x + vec.x, p.y + vec.y) // Is the value not inside the map
+                || map[p.y + vec.y][p.x + vec.x].v !== originalPlantId // Is the value different from the original plant id
+            )) {
+                perimiter.push({ x: p.x + vec.x, y: p.y + vec.y, visited: false, index: i++, direction: vec.d });
             }
         });
     });
-    console.log(perimiter);
-    drawPerimiter(perimiter);
 
-    perimiter.sort((a, b) => a.x - b.x);
-    console.log(perimiter.map(p => p.index));
+    let directions = ["N", "S", "E", "W"];
+    let totalSides = 0;
 
-    return perimiter.length;
+    // Construct
+    directions.forEach(direction => {
+        console.log(" Direction:", direction);
+        const periemeterMap = {};
+        perimiter.filter(p => p.direction === direction).forEach(p => {
+            if (direction === "N" || direction === "S") {
+                if (!periemeterMap[p.y]) {
+                    periemeterMap[p.y] = [];
+                }
+
+                periemeterMap[p.y].push(p.x);
+            }
+            else {
+                if (!periemeterMap[p.x]) {
+                    periemeterMap[p.x] = [];
+                }
+
+                periemeterMap[p.x].push(p.y);
+            }
+        });
+
+        // Sort
+        Object.keys(periemeterMap).forEach(k => periemeterMap[k].sort((a, b) => a - b));
+
+        // Count
+        Object.keys(periemeterMap).forEach(k => {
+            let values = periemeterMap[k];
+
+            let i = 0;
+            let c = values[i];
+            let sides = 1;
+            while (i < values.length - 1) {
+                let n = values[i + 1];
+                if (n !== c + 1) {
+                    sides++;
+                }
+
+                c = n;
+                i++;
+            }
+            console.log("    For y=", k, "num sides=", sides);
+            console.log();
+            totalSides += sides;
+        });
+    })
+
+
+
+    console.log("");
+
+    // drawPerimeter(perimiter);
+
+    return totalSides;
 }
 
 const findNeighborsNotVisited = (plot, plantList) => {
@@ -131,16 +178,20 @@ function setup() {
 
     // Part 1
     let total = 0;
-    Object.keys(plotDict).filter(p => p === "R_0_0").forEach(plantId => {
+    Object.keys(plotDict).forEach(plantId => {
         const plots = plotDict[plantId];
+
         const area = plots.length;
-        const perimiter = getPerimiter(plots, plantId);
+
+        const perimeter = getPerimeter(plots, plantId);
         const sides = getSides(plots, plantId);
-        console.log("Plot ", plantId, "Area:", area, "Perimiter:", perimiter, "Sides:", sides);
-        total += (area * perimiter);
+
+        console.log("Plot ", plantId, "Area:", area, "Perimeter:", perimeter, "Sides:", sides);
+
+        total += (area * sides);
     });
 
-    console.log("Part 1:", total);
+    console.log("Part 2:", total);
 }
 
 const drapMap = () => {
@@ -158,12 +209,18 @@ const drapMap = () => {
     }
 }
 
-const drawPerimiter = (perimiter) => {
+const drawPerimeter = (perimiter) => {
     perimiter.forEach(p => {
         stroke(255, 50, 50);
         strokeWeight(5);
         fill(255, 255, 255, 100);
         rect(p.x * cellSize + cellSize, p.y * cellSize + cellSize, cellSize, cellSize);
+
+        stroke(0, 0, 255);
+        switch (p.direction) {
+            case "N": line(p.x * cellSize + cellSize, p.y * cellSize + cellSize + cellSize, p.x * cellSize + cellSize * 2, p.y * cellSize + cellSize + cellSize); break;
+        }
+
         noStroke();
         fill(255);
         text(p.index, p.x * cellSize + cellSize / 2 + cellSize, p.y * cellSize + cellSize / 2 + cellSize);
