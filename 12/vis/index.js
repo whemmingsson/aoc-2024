@@ -1,14 +1,11 @@
 const useExample = false;
 
 // Display variables
-const cellSize = 50;
+const cellSize = 10;
 const plantColors = {};
 
 // Algoritm variables
 const cardinalVectors = [{ x: 0, y: -1, d: "N" }, { x: 0, y: +1, d: "S" }, { x: 0 - 1, y: 0, d: "W" }, { x: 0 + 1, y: 0, d: "E" }];
-const diagonalVectors = [{ x: -1, y: -1, d: "NW" }, { x: 1, y: 1, d: "SE" }, { x: 1, y: -1, d: "NE" }, { x: -1, y: 1, d: "SW" }];
-const neighborVectors = [...cardinalVectors, ...diagonalVectors];
-console.log(neighborVectors);
 const map = [];
 const allPlots = [];
 const plantDict = {};
@@ -31,18 +28,7 @@ const getPerimeter = (plots, plantId) => {
     return perimTotal;
 }
 
-const getNeighbors = (list) => {
-    plots.forEach(p => {
-        cardinalVectors.forEach(vec => {
-            if (!inBounds(p.x + vec.x, p.y + vec.y) || map[p.y + vec.y][p.x + vec.x].v !== originalPlantId) {
-                perimTotal++;
-            }
-        });
-    });
-}
-
 const getSides = (plots, plantId) => {
-    console.log("GETTING SIDES FOR PLOT=", plantId);
     const originalPlantId = plantId[0];
     const perimiter = [];
     let i = 0;
@@ -56,12 +42,10 @@ const getSides = (plots, plantId) => {
         });
     });
 
-    let directions = ["N", "S", "E", "W"];
     let totalSides = 0;
 
     // Construct
-    directions.forEach(direction => {
-        console.log(" Direction:", direction);
+    ["N", "S", "E", "W"].forEach(direction => {
         const periemeterMap = {};
         perimiter.filter(p => p.direction === direction).forEach(p => {
             if (direction === "N" || direction === "S") {
@@ -85,13 +69,11 @@ const getSides = (plots, plantId) => {
 
         // Count
         Object.keys(periemeterMap).forEach(k => {
-            let values = periemeterMap[k];
-
             let i = 0;
-            let c = values[i];
+            let c = periemeterMap[k][i];
             let sides = 1;
-            while (i < values.length - 1) {
-                let n = values[i + 1];
+            while (i < periemeterMap[k].length - 1) {
+                let n = periemeterMap[k][i + 1];
                 if (n !== c + 1) {
                     sides++;
                 }
@@ -99,17 +81,9 @@ const getSides = (plots, plantId) => {
                 c = n;
                 i++;
             }
-            console.log("    For y=", k, "num sides=", sides);
-            console.log();
             totalSides += sides;
         });
     })
-
-
-
-    console.log("");
-
-    // drawPerimeter(perimiter);
 
     return totalSides;
 }
@@ -160,10 +134,9 @@ function setup() {
     for (let y = 0; y < map.length; y++) {
         for (let x = 0; x < map[y].length; x++) {
             if (map[y][x].visited) { continue; }
-            const plantId = map[y][x].v;
             let plotPlants = findConnectedPlants(map[y][x]);
             if (plotPlants.length > 0) {
-                plotDict[plantId + "_" + x + "_" + y] = plotPlants;
+                plotDict[map[y][x].v + "_" + x + "_" + y] = plotPlants;
             }
         }
     }
@@ -176,13 +149,10 @@ function setup() {
 
     drapMap();
 
-    // Part 1
     let total = 0;
     Object.keys(plotDict).forEach(plantId => {
         const plots = plotDict[plantId];
-
         const area = plots.length;
-
         const perimeter = getPerimeter(plots, plantId);
         const sides = getSides(plots, plantId);
 
