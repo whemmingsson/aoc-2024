@@ -92,11 +92,11 @@ module.exports = class Day {
         }
 
         const isOne = (v) => {
-            return v > 0.9999;
+            return v > 0.99999999;
         }
 
         const isZero = (v) => {
-            return v < 0.0001;
+            return v < 0.00000001;
         }
 
         const normalize = (v) => {
@@ -112,14 +112,14 @@ module.exports = class Day {
 
         const getMinTokensMath = (m) => {
             // a = n / d
-            const n = m.prize.y - (m.B.y * m.prize.x) / m.B.x;
-            const d = m.A.y - (m.B.y * m.A.x) / m.B.x;
+            const n = m.B.x * m.prize.y - m.B.y * m.prize.x;
+            const d = m.A.y * m.B.x - m.B.y * m.A.x;
             let a = n / d;
 
             // calculate b
             let b = (m.prize.x - m.A.x * a) / m.B.x;
 
-            /*a = normalize(a);
+            a = normalize(a);
             if (a === -1) {
                 return Infinity;
             }
@@ -127,7 +127,7 @@ module.exports = class Day {
             b = normalize(b);
             if (b === -1) {
                 return Infinity;
-            }*/
+            }
 
             // calculate cost
             let c = a * 3 + b;
@@ -136,29 +136,11 @@ module.exports = class Day {
                 return Infinity;
             }
 
-            //console.log(c);
-
-            const decimalExpansion = c % 1;
-            // console.log(decimalExpansion);
-
             if (Number.isInteger(c)) {
                 return c;
             }
 
-            if (isZero(decimalExpansion)) {
-                //console.log("   ", decimalExpansion, "   is zero");
-                c = Math.floor(c);
-                return c;
-            }
-            else if (isOne(decimalExpansion)) {
-                //console.log("   ", decimalExpansion, "   is one");
-                c = Math.ceil(c);
-                return c;
-            }
-            else {
-                return Infinity;
-            }
-
+            return Infinity;
         }
 
         let total = 0;

@@ -1,8 +1,8 @@
 const useExample = false;
 
 // Display variables
-const cellSize = 10;
-const speed = 20;
+const cellSize = 25;
+const speed = 10;
 
 // Algoritm variables
 const cardinalVectors = [{ x: 0, y: -1, d: "^" }, { x: 0, y: 1, d: "v" }, { x: -1, y: 0, d: "<" }, { x: 1, y: 0, d: ">" }];
@@ -108,7 +108,6 @@ const moveRobot = (instr) => {
 
 const executeInstruction = () => {
     const instruction = instructions[instructionIndex];
-    console.log("Executing instruction", instruction, "at index", instructionIndex);
     const simpleMove = canMoveSimpleCase(instruction);
     if (simpleMove) {
         moveRobot(instruction);
@@ -137,45 +136,30 @@ const handleHorizontalMove = (instr) => {
         boxPos.y += vector.y;
     };
 
-    // Now, boxPos is either at an empty cell or at a wall. If at wall, we cannot move anything
     if (map[boxPos.y][boxPos.x] === "#") {
         return;
     }
 
-    // Move everything from the end of the list:
     for (let i = cellsToShift.length - 1; i >= 0; i--) {
         const toMove = cellsToShift[i];
         map[toMove.y + vector.y][toMove.x + vector.x] = map[toMove.y][toMove.x];
     }
 
-    // Update the robots position
-    updateRobotPos(instr);
-
-    // Clear the old robot pos
-    map[originalPos.y][originalPos.x] = ".";
-
-}
-
-
-let keyOf = (p) => {
-    return p.x + "_" + p.y;
+    moveRobot(instr);
 }
 
 const constructFullBox = (p) => {
-    // p is a position of a box
+    let keyOf = (p) => {
+        return p.x + "_" + p.y;
+    }
+
     let p1 = { ...p, v: map[p.y][p.x] };
     let p2 = map[p.y][p.x] === "]" ? { x: p.x - 1, y: p.y, v: "[" } : { x: p.x + 1, y: p.y, v: "]" }
-
-
-    // y is the same, but x is not the same. Pick lowest x.
     const smallestX = Math.min(p1.x, p2.x);
     return { p1, p2, key: keyOf({ x: smallestX, y: p.y }), y: p.y, x: smallestX };
 }
 
 const findAllBoxesAbove = (box, boxes, found, vecY) => {
-    console.log(box);
-    // I there one or several boxes above?
-    // Check part 1
     const test1 = { x: box.p1.x, y: box.y + vecY };
     const nextBoxes = [];
     if (isBoxAt(test1)) {
@@ -211,36 +195,19 @@ const findAllBoxesAux = (box, vecY) => {
     let allBoxes = [];
     found[box.key] = box;
     allBoxes.push(box);
-
     findAllBoxesAbove(box, allBoxes, found, vecY);
     return allBoxes;
 }
 
 const handleVerticalMove = (instr) => {
-    console.log("  Handle vertical move");
     const vector = directionMap[instr];
     const originalPos = { x: robotPos.x, y: robotPos.y };
 
-    let boxPart1 = { x: originalPos.x + vector.x, y: originalPos.y + vector.y };
-    let boxPart2 = map[boxPart1.y][boxPart1.x] === "]" ? { x: boxPart1.x - 1, y: boxPart1.y } : { x: boxPart1.x + 1, y: boxPart1.y }
-
-    console.log(boxPart1);
-    console.log(boxPart2);
-
-
-    // Find all boxes that would be affected by move
-
-    // Divide the problem - start with moving up
     let allBoxes = [];
-    let box1 = constructFullBox(boxPart1)
+    let box1 = constructFullBox({ x: originalPos.x + vector.x, y: originalPos.y + vector.y })
     allBoxes = findAllBoxesAux(box1, vector.y);
 
-    console.log("All boxes up for move!", allBoxes);
-
-    // Can they be moved? Need to check if all above is free!
     const canMove = allBoxes.every(b => map[b.y + vector.y][b.p1.x] !== "#" && map[b.y + vector.y][b.p2.x] !== "#");
-
-
 
     if (!canMove) {
         return;
@@ -248,27 +215,14 @@ const handleVerticalMove = (instr) => {
 
     allBoxes.sort((a, b) => vector.y === -1 ? a.y - b.y : b.y - a.y);
 
-    console.log("All boxes up for move (sorted)!", allBoxes);
-
     allBoxes.forEach(b => {
-        console.log("Moving box", b);
-        // Move p1
-        const p1v = b.p1.v;
         map[b.p1.y][b.p1.x] = "."
-        map[b.p1.y + vector.y][b.p1.x] = p1v;
-
-        // Move p2
-        const p2v = b.p2.v;
+        map[b.p1.y + vector.y][b.p1.x] = b.p1.v;
         map[b.p2.y][b.p2.x] = "."
-        map[b.p2.y + vector.y][b.p2.x] = p2v;
+        map[b.p2.y + vector.y][b.p2.x] = b.p2.v;
     })
 
-    // Update the robots position
-    updateRobotPos(instr);
-
-    map[originalPos.y + vector.y][originalPos.x + vector.x] = "@";
-    map[originalPos.y][originalPos.x] = ".";
-
+    moveRobot(instr);
 }
 
 const handleComplexMove = (instr) => {
@@ -293,14 +247,9 @@ const calculateGPSDistance = () => {
     return sum;
 }
 
-function mouseClicked() {
-    executeInstruction();
-    drawMap();
-}
-
 function setup() {
     // Render setup
-    createCanvas(1200, 1200);
+    createCanvas(2700, 1400);
     textAlign(CENTER, CENTER);
     textSize(cellSize * 0.6);
 
@@ -310,53 +259,29 @@ function setup() {
     size = { h: map.length, w: map[0].length }
     robotPos = getStartPosition();
     directionMap = createDirectionsMap();
-
-    console.log(map);
-    console.log(instructions);
-    console.log(robotPos);
-    console.log(directionMap);
-
-    drawMap();
-
-    speedAhead();
 }
 
 const drawCell = (v, x, y) => {
     if (v === "#") {
-        stroke(0);
-        fill(0);
-    }
-    else if (v === "[") {
-        stroke(230, 161, 0);
-        fill(230, 161, 0);
-    }
-    else if (v === "]") {
-        stroke(230, 161, 0);
-        fill(230, 161, 0);
+        fill(150, 50, 50);
+        rect(x, y, cellSize, cellSize);
     }
     else if (v === "@") {
         noStroke();
-        fill(200, 50, 50);
+        fill(0, 100, 250);
+        rect(x, y, cellSize, cellSize);
     }
-    else {
-        stroke(0);
-        fill(255);
+    else if (v === ".") {
+        //stroke(0);
+        fill(20);
+        rect(x, y, cellSize, cellSize);
     }
-
-    rect(x, y, cellSize, cellSize);
-
-    if (v === "[") {
-        fill(0);
-        text("[", x + cellSize / 2, y + cellSize / 2);
-    }
-
-    if (v === "]") {
-        fill(0);
-        text("]", x + cellSize / 2, y + cellSize / 2);
-    }
-    if (v === "@" && instructionIndex < instructions.length - 1) {
-        fill(0);
-        text(instructions[instructionIndex], x + cellSize / 2, y + cellSize / 2);
+    else if (v === "[") {
+        stroke(150, 106, 3);
+        strokeWeight(2);
+        fill(173, 122, 3);
+        rect(x + 2, y + 2, (cellSize - 2) * 2, cellSize - 4);
+        noStroke();
     }
 }
 
@@ -367,14 +292,14 @@ const drawMap = () => {
         }
     }
 
-    // Display shade of where the bot should move next 
+    /*// Display shade of where the bot should move next 
     if (instructionIndex < instructions.length - 1) {
         const vec = directionMap[instructions[instructionIndex]];
         const rX = robotPos.x + vec.x;
         const rY = robotPos.y + vec.y;
         fill(255, 20, 20, 100);
         rect(rX * cellSize, rY * cellSize, cellSize, cellSize);
-    }
+    } */
 }
 
 const speedCalc = () => {
@@ -392,14 +317,12 @@ const speedCalc = () => {
 const speedAhead = () => {
     for (let i = 0; i < 188; i++) {
         executeInstruction();
-
     }
-
     drawMap();
 }
 
 function draw() {
-
+    background(20);
     speedCalc();
     drawMap();
 }
