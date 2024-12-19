@@ -2,87 +2,54 @@
 const Parser = require("../common/parser.js");
 module.exports = class Day {
     static run() {
-        const data = Parser.readRaw(__dirname, false);
+        const data = Parser.readRaw(__dirname, true);
         const lines = data.split("\n");
 
-        let patternsMap = {};
+        let patterns = new Set();
         let designs = [];
 
         lines[0].trim()
             .split(",")
             .map((p) => p.trim())
             .forEach((p) => {
-                if (p)
-                    patternsMap[p] = true;
+                if (p) {
+                    patterns.add(p);
+                }
             });
 
         for (let i = 2; i < lines.length; i++) {
             designs.push(lines[i].trim());
         }
 
-        console.log("Patterns:", patternsMap);
-        console.log("Designs", designs);
+        let invalidStartIndices = new Set();
+        const validateDesign = (design, idx) => {
+            if (invalidStartIndices.has(idx)) return false;
 
-        let invalidStartIndices = {};
-        const validateDesign = (design, startIndex) => {
-            if (invalidStartIndices[startIndex]) return false;
+            let len = 1;
+            let pattern = design.substring(idx, idx + len);
 
-            let patternLength = 1;
-            let patternToTest = design.substring(startIndex, startIndex + patternLength);
-
-            for (let i = 0; i < design.length - startIndex; i++) {
+            for (let i = 0; i < design.length - idx; i++) {
                 if (
-                    patternsMap[patternToTest] &&
-                    startIndex + patternLength === design.length
+                    patterns.has(pattern) &&
+                    idx + len === design.length
                 ) {
-                    patternsMap[design] = true;
                     return true;
-                } else if (patternsMap[patternToTest]) {
-                    let tailPartsValid = validateDesign(
-                        design,
-                        startIndex + patternLength
-                    );
-
-                    if (tailPartsValid) {
-                        return true;
-                    }
+                } else if (patterns.has(pattern) && validateDesign(design, idx + len)) {
+                    return true;
                 }
 
-                patternLength++;
-                patternToTest = design.substring(startIndex, startIndex + patternLength);
+                len++;
+                pattern = design.substring(idx, idx + len);
             }
 
-
-            invalidStartIndices[startIndex] = true;
+            invalidStartIndices.add(idx)
             return false;
         };
 
-        const validateDesignAlt = (design, end) => {
-            let len = 1;
-            let pattern = design.substring(end - len, end);
-
-            while (!patternsMap[pattern] && len <= design.length) {
-                console.log("Testing", pattern);
-                len++;
-                pattern = design.substring(end - len, end);
-            }
-
-            if (len >= design.length) {
-                console.log("Tested whole string, it was invalid")
-                return false;
-            }
-
-            // Pattern was valid
-            console.log(pattern, "was valid");
-
-
-        }
-
         const isDesignValid = (design) => {
-            invalidStartIndices = {};
+            invalidStartIndices = new Set();
             return validateDesign(design, 0);
         };
-
 
         let validDesigns = [];
         designs.forEach((design) => {
@@ -94,7 +61,5 @@ module.exports = class Day {
         });
 
         console.log("Valid count:", validDesigns.length);
-        //console.log("Valid patterns:", patternsMap)
-        //console.log("invalid patterns:", invalidPatterns)
     }
 }
