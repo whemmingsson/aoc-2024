@@ -36,8 +36,6 @@ module.exports = class Day {
             if (v === 4) return registers.A;
             if (v === 5) return registers.B;
             if (v === 6) return registers.C;
-
-            console.log("ERROR! 7 is not a known combo operand");
         }
 
         const doDivision = (register, p) => {
@@ -45,95 +43,139 @@ module.exports = class Day {
             const cov = getComboOperandValue(p);
             const denominator = Math.pow(2, cov);
             const result = Math.floor(numerator / denominator);
-            //console.log("numerator:", numerator, "denominator:", denominator, "was aquired by raising", 2, "to the power of", cov);
             writeToRegister(register, result);
         }
 
-        const out = [];
+        let out = [];
         const operations = {
             0: (p) => {
-                // adv
-                // The adv instruction (opcode 0) performs division. The numerator is the value in the A register. The denominator is found by raising 2 to the power of the instruction's combo operand. 
-                // (So, an operand of 2 would divide A by 4 (2^2); an operand of 5 would divide A by 2^B.) The result of the division operation is truncated to an integer and then written to the A register.
                 doDivision("A", p);
                 return true;
             },
             1: (p) => {
-                //bxl
-                // The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's literal operand, then stores the result in register B.
                 const lov = getOperand(p);
                 const regB = registers.B;
                 writeToRegister("B", lov ^ regB);
                 return true;
             },
             2: (p) => {
-                // bst
                 const cov = getComboOperandValue(p);
                 writeToRegister("B", cov % 8);
                 return true;
             },
             3: (p) => {
-                //jnz
                 if (registers.A === 0) return true;
                 const lov = getOperand(p);
-                //console.log("Jumping from", pointer, "to", lov);
                 pointer = lov;
                 return false;
             },
             4: (p) => {
-                //bxc
                 const res = registers.B ^ registers.C;
                 writeToRegister("B", res);
                 return true;
             },
             5: (p) => {
-                //out
                 const cov = getComboOperandValue(p);
                 const res = cov % 8;
+                /*if (res !== program[out.length]) {
+                    // Invalid output. Must match program op code at this position
+                    throw new Error("Invalid starting registry");
+                } */
+
                 out.push(res);
+                if (out.length === program.length) {
+                    throw new Error("Found input. Yaaay!");
+                }
+
                 return true;
             },
             6: (p) => {
-                //bdv
                 doDivision("B", p);
                 return true;
             },
             7: (p) => {
-                //cdv
                 doDivision("C", p);
                 return true;
             },
         }
 
-        let pointer = 0;
-        const runProgram = () => {
-            console.log("STARTING PROGRAM");
-            console.log(registers);
-            console.log(program);
+        const runWithInitialA = (initialA) => {
+            out = [];
+            registers.A = initialA;
+            pointer = 0;
+            let stepsBeforeHalt = 0;
             while (true) {
                 try {
                     const opCode = getOpCode(pointer);
-                    //console.log("Found opCode", opCode, "at pointer:", pointer);
                     const operation = operations[opCode];
                     if (operation(pointer)) {
                         pointer += 2;
                     }
-                    console.log(" Registers after op:", registers)
+                    stepsBeforeHalt++;
                 }
                 catch (e) {
-                    //console.log("Tried to read outside program, HALT", e);
+                    registerStats(initialA, stepsBeforeHalt)
                     break;
                 }
             }
+        }
 
-            console.log("Pointer:", pointer);
-            console.log("Registers:", registers);
-            console.log("out:", out.join(","))
+        const stats = [];
+        const registerStats = (initialA, stepsBeforeHalt) => {
+            //if (stepsStats[stepsBeforeHalt]) return;
+
+            // Interesting parameters: pointer, length of out, contents of out
+            let stat = { A: initialA, s: stepsBeforeHalt, l: out.length, out: out.join(",") };
+            stepsStats[stepsBeforeHalt] = stat;
+
+
+
+            stats.push(stat);
+        }
+
+        const dumpStats = () => {
+            let file = "";
+
+            stats.forEach(s => {
+                let line = Object.values(s).join(";");
+                file += line + "\n";
+            })
+
+            fs.writeFileSync("dump.txt", file);
+        }
+
+        let pointer = 0;
+        let registerA = 0;
+        let count = 0;
+        let start = 0;
+        let tries = 11744 + 1;
+        let stepsStats = {};
+
+        count = start;
+        registerA = start;
+        const runProgram = () => {
+            console.log("STARTING PROGRAM");
+            console.log(registers);
+            console.log(program);
+            while (count < start + tries) {
+                runWithInitialA(registerA);
+                count++;
+
+                if (out.length === program.length) {
+                    console.log("out", out, "registerA:", registerA);
+                    break;
+                }
+                registerA++;
+            }
+
+            dumpStats();
         }
 
         runProgram();
+        //runWithInitialA(35184372088832);
+        //dumpStats();
     }
 }
 
-// Too low: 56865584425514
-// Too low: 70555290965673
+// Too low: 41113000
+// Too low: 1526178000
