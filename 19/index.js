@@ -2,7 +2,7 @@
 const Parser = require("../common/parser.js");
 module.exports = class Day {
     static run() {
-        const data = Parser.readRaw(__dirname, true);
+        const data = Parser.readRaw(__dirname, false);
         const lines = data.split("\n");
 
         let patterns = new Set();
@@ -21,45 +21,51 @@ module.exports = class Day {
             designs.push(lines[i].trim());
         }
 
-        let invalidStartIndices = new Set();
-        const validateDesign = (design, idx) => {
-            if (invalidStartIndices.has(idx)) return false;
+        let m = new Set();
+        const validate = (d, s) => {
+            if (m.has(s)) return false;
 
-            let len = 1;
-            let pattern = design.substring(idx, idx + len);
-
-            for (let i = 0; i < design.length - idx; i++) {
-                if (
-                    patterns.has(pattern) &&
-                    idx + len === design.length
-                ) {
+            for (let i = 1; i < d.length - s + 1; i++) {
+                const v = patterns.has(d.substring(s, s + i))
+                if ((v && s + i === d.length) || (v && validate(d, s + i)))
                     return true;
-                } else if (patterns.has(pattern) && validateDesign(design, idx + len)) {
-                    return true;
-                }
-
-                len++;
-                pattern = design.substring(idx, idx + len);
             }
 
-            invalidStartIndices.add(idx)
+            m.add(s)
             return false;
         };
 
-        const isDesignValid = (design) => {
-            invalidStartIndices = new Set();
-            return validateDesign(design, 0);
+        let c = {};
+        const count = (d, s) => {
+            if (c[s]) {
+                return c[s];
+            }
+
+            let t = 0;
+            for (let i = 1; i < d.length - s + 1; i++) {
+                const v = patterns.has(d.substring(s, s + i));
+                if (v && s + i === d.length)
+                    t++;
+                else if (v)
+                    t += count(d, s + i);
+            }
+
+            c[s] = t;
+            return t;
         };
 
-        let validDesigns = [];
-        designs.forEach((design) => {
-            let isValid = isDesignValid(design);
-            if (isValid) {
-                validDesigns.push(design);
-            }
-            console.log("Design:", design, isValid);
-        });
+        const isDesignValid = (design) => {
+            m = new Set();
+            return validate(design, 0);
+        };
 
+        const countOptionsAux = (design) => {
+            c = {};
+            return count(design, 0, 0);
+        };
+
+        let validDesigns = designs.filter((design) => isDesignValid(design));
         console.log("Valid count:", validDesigns.length);
+        console.log("Total options:", validDesigns.map(design => countOptionsAux(design)).reduce((a, c) => a + c, 0));
     }
 }
