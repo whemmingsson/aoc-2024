@@ -1,4 +1,4 @@
-const useExample = true; // Use simpler data
+const useExample = false; // Use simpler data
 const render = true; // If false, the algoritm runs until completion without rendering
 
 // Display variables
@@ -11,11 +11,14 @@ let map = [];
 let start, end;
 let nodes = [];
 let path = {};
+let pathMap = {};
 let walls = [];
 let wallsToRemove = [];
 let santa;
 let size;
 let pathContructed = false;
+// Algorithm land!
+let currentWallToRemoveIndex = 0;
 
 class GNode {
     constructor(x, y, id, v) {
@@ -137,6 +140,7 @@ const constructPath = () => {
         console.log("End");
     }
     pathContructed = true;
+    pathMap[start.id] = -1;
 }
 
 function setup() {
@@ -150,6 +154,8 @@ function setup() {
     path[start.id] = true;
 
     constructPath();
+
+    runPart1();
 
     if (!render) {
         noLoop();
@@ -178,7 +184,14 @@ const drawCell = (n, x, y) => {
         fill(40, 150, 250);
     }
 
+    if (n.isBeingTested) {
+        fill(220, 220, 0);
+    }
+
     rect(x, y, cellSize, cellSize);
+
+    fill(255);
+    text(n.id, x + cellSize / 2, y + cellSize / 2);
 }
 
 const drawMap = () => {
@@ -205,10 +218,10 @@ const drawSanta = () => {
 
 let pathLength = 0;
 const moveSanta = () => {
-    console.log("Moving santa");
     let current = map[santa.y][santa.x];
     let { x, y, id } = current.next();
     path[id] = true;
+    pathMap[id] = Object.keys(pathMap).length;
     santa.x = x;
     santa.y = y;
 
@@ -244,25 +257,61 @@ function draw() {
 
 }
 
+function mouseClicked() {
+    const mX = Math.floor(mouseX / cellSize);
+    const mY = Math.floor(mouseY / cellSize);
 
-// Algorithm land!
-let currentWallToRemoveIndex = 0;
+    const nodeAtMouse = map[mY][mX];
+
+    if (nodeAtMouse.isWall) {
+        removeWall(nodeAtMouse);
+    }
+}
+
+const runPart1 = () => {
+    let cheatScores = {};
+    wallsToRemove.forEach(w => {
+        let savings = removeWall(w);
+        if (!cheatScores[savings]) {
+            cheatScores[savings] = 0;
+        }
+
+        cheatScores[savings]++;
+    });
+
+    console.log(cheatScores);
+
+    let countCheats = 0;
+    Object.keys(cheatScores).forEach(saving => {
+        if (saving >= 100) {
+            countCheats += cheatScores[saving];
+        }
+    });
+
+    console.log("Number of cheats that would save at least 100:", countCheats);
+}
+
 
 const removeWall = (wall) => {
-    // wall is a node that we want to remove and replace with an open node
+    let nodesInPath = wall.adjacent;
 
-    //First - convert the wall to an open path
-    wall.isWall = false;
-    wall.v = ".";
+    if (nodesInPath.length === 2) {
+        // Simple case
+        let aIndex = pathMap[nodesInPath[0].id];
+        let bIndex = pathMap[nodesInPath[1].id];
+        let diff = Math.abs(aIndex - bIndex);
+        return diff - 2;
+    }
+    else if (nodesInPath.length === 3) {
+        let aIndex = pathMap[nodesInPath[0].id];
+        let bIndex = pathMap[nodesInPath[1].id];
+        let cIndex = pathMap[nodesInPath[2].id];
+        let inidices = [aIndex, bIndex, cIndex].sort((a, b) => a - b);
+        let diff = Math.abs(inidices[2] - inidices[0]);
+        return diff - 2;
+    }
 
-    // Now we need to update the path to reflect this new node.
-    // We need to make sure to exclude the "old" path.
-
-    // Find the node pointing at this wall.
-    let nbs = getAllNeighbors(wall);
-    console.log(nbs);
-    let prevInPath = nbs.find(nb => nb.nextNode.id === wall.id);
-    console.log(prevInPath);
+    return -1000;
 }
 
 
