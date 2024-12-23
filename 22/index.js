@@ -63,41 +63,6 @@ module.exports = class Day {
             return next;
         }
 
-        const getPriceTableLengthN = (inital, n) => {
-            const s = new Sequence();
-            let priceTable = [];
-            let next = inital;
-            let prevPrice = Number(getPrice(BigInt(inital)));
-            priceTable.push({ p: prevPrice, d: null });
-            for (let i = 0; i < n - 1; i++) {
-                next = getNextSecretNumber(next);
-                let price = Number(getPrice(next));
-                let diff = price - prevPrice;
-                s.add(diff);
-
-                priceTable.push({ p: price, d: diff, s: s.getValues() });
-                prevPrice = price
-            }
-
-            return priceTable;
-        }
-
-        const buildPriceSequenceMap = (table) => {
-            const map = {};
-            let sequenceStr = (list) => {
-                if (!list) return "";
-                return list.join(",");
-            }
-            table.forEach(entry => {
-                if (!map[entry.p]) {
-                    map[entry.p] = [];
-                }
-                map[entry.p].push(sequenceStr(entry.s));
-            });
-
-            return map;
-        }
-
         const bi_10 = BigInt(10);
         const getPrice = (v) => {
             return v % bi_10;
@@ -107,43 +72,38 @@ module.exports = class Day {
             console.log(initalSecretNumbers.map(sn => getNthSecretNumber(sn, 2000)).reduce((a, c) => a + c, BigInt(0)));
         }
 
+        let getSequenceKey = (list) => {
+            if (!list || list.length < 4) return null;
+            return list.join(",");
+        }
+
         const calcTotalBestPrice = (inital, n) => {
-            let getSequenceKey = (list) => {
-                if (!list || list.length < 4) return null;
-                return list.join(",");
-            }
             const s = new Sequence();
             let next = inital;
             let prevPrice = Number(getPrice(BigInt(inital)));
-            let bestLocal = {};
+            let alreadySold = new Set();
             for (let i = 0; i < n - 1; i++) {
                 next = getNextSecretNumber(next);
                 let price = Number(getPrice(next));
                 let diff = price - prevPrice;
-
                 s.add(diff);
 
                 let sequenceKey = getSequenceKey(s.getValues());
 
-                if (sequenceKey) {
-                    if (price >= (bestLocal[sequenceKey] ?? 0)) {
-                        bestLocal[sequenceKey] = price;
+                if (sequenceKey && !alreadySold.has(sequenceKey)) {
+                    if (!bigMap[sequenceKey]) {
+                        bigMap[sequenceKey] = 0;
                     }
+
+                    bigMap[sequenceKey] += price;
+
+                    alreadySold.add(sequenceKey);
                 }
 
-                prevPrice = price
+                prevPrice = price;
             }
-
-            Object.keys(bestLocal).forEach(k => {
-                let v = bestLocal[k];
-                if (!bigMap[k]) {
-                    bigMap[k] = [];
-                }
-                bigMap[k].push(v);
-            })
         }
 
-        // Part 2 - construct the "tables" list
         const bigMap = {};
         const part2 = () => {
             initalSecretNumbers.forEach((initial) => {
@@ -154,23 +114,15 @@ module.exports = class Day {
             let bestSeq = "";
             Object.keys(bigMap).forEach(k => {
                 let v = bigMap[k];
-                let s = v.reduce((a, c) => a + c, 0);
-                if (s > max) {
-                    max = s;
+                if (v > max) {
+                    max = v;
                     bestSeq = k;
                 }
             });
 
-            console.log(max, bestSeq);
+            console.log(max);
         }
 
         part2();
-
     }
 }
-
-// 1861 (too big)
-
-// 1748 (too high...still)
-
-// 1705 (too high, still)
