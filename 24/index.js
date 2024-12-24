@@ -10,6 +10,7 @@ class Wire {
     constructor(id, value) {
         this.id = id;
         this.value = value;
+        this.originalValue = value;
     }
 
     getBit() {
@@ -27,16 +28,20 @@ class Wire {
     setBit(v) {
         this.value = v;
     }
+
+    reset() {
+        this.value = this.originalValue;
+    }
 }
 
 class Gate {
     constructor(w1, w2, opCode, out) {
         this.w1 = w1;
         this.w2 = w2;
-        this.type = opCode;
         this.op = ops[opCode];
         this.out = out;
         this.outputValue = null;
+        this.initalOut = out;
     }
 
     run() {
@@ -65,11 +70,18 @@ class Gate {
 
         return null; // Not yet ready to output
     }
+
+    reset() {
+        this.out = this.initalOut;
+        this.outputValue = null;
+    }
 }
 
 class WireGroup {
     constructor(wires) {
         this.wires = wires;
+
+        this.sort(); // Sort ONCE
     }
 
     output() {
@@ -80,15 +92,24 @@ class WireGroup {
         return "NOT_READY";
     }
 
-    getDecimal() {
+    sort() {
         this.wires.sort((a, b) => {
             let aa = parseInt(a.id.substring(1));
             let bb = parseInt(b.id.substring(1));
             return bb - aa;
-
         });
+    }
 
-        return parseInt(this.wires.map(w => w.getBit()).map(b => b ? "1" : "0").join(""), 2);
+    getDecimal() {
+        if (this.output() === "NOT_READY") {
+            return -1;
+        }
+
+        return BigInt(parseInt(this.wires.map(w => w.getBit()).map(b => b ? "1" : "0").join(""), 2));
+    }
+
+    add(otherGroup) {
+        return BigInt(this.getDecimal()) + BigInt(otherGroup.getDecimal());
     }
 }
 
@@ -98,7 +119,38 @@ const ops = {
     "XOR": (b1, b2) => b1 ^ b2
 }
 
-const USE_EXAMPLE = false;
+const USE_EXAMPLE = true;
+
+const didAddition = (x, y, z) => {
+    let sum = x.add(y);
+    let expectedSum = z.getDecimal();
+    console.log(sum, "=", expectedSum);
+    return sum === expectedSum;
+}
+
+const reset = () => {
+    wires.forEach(w => w.reset());
+    gates.forEach(g => g.reset());
+}
+
+const run = (x, y, z) => {
+
+    reset();
+    while (z.output() === "NOT_READY") {
+        gates.forEach(gate => {
+            gate.output();
+        });
+    }
+    console.log(didAddition(x, y, z));
+}
+
+const swapOutputWire = (i, j) => {
+    if (i === j) { return; }
+
+    let temp = gates[i].out;
+    gates[i].out = gates[j].out;
+    gates[j].out = temp;
+}
 
 module.exports = class Day {
     static run() {
@@ -115,17 +167,16 @@ module.exports = class Day {
                     wireMap[wParts[0]] = wire;
                 }
                 else if (v.indexOf("->") > 0) {
-                    let opRegex = /XOR|OR|AND/g;
-                    let wireRegex = /[\da-z]{3}/g;
+                    const opRegex = /XOR|OR|AND/g;
+                    const wireRegex = /[\da-z]{3}/g;
+                    const wires = v.match(wireRegex);
+                    const op = v.match(opRegex);
+                    const gate = new Gate(wires[0], wires[1], op[0], wires[2]);
+                    const inputs = [wires[0], wires[1]];
 
-                    let wires = v.match(wireRegex);
-                    let op = v.match(opRegex);
-                    let gate = new Gate(wires[0], wires[1], op[0], wires[2]);
-                    let inputs = [wires[0], wires[1]];
                     inputs.sort();
-                    let gateKey = inputs.join("_");
                     gates.push(gate);
-                    gateMap[gateKey] = gate;
+                    gateMap[inputs.join("_")] = gate;
                     outWires.push(wires[2]);
                 }
             });
@@ -138,14 +189,20 @@ module.exports = class Day {
         });
 
         const targetOutputs = wires.filter(w => w.id[0] === "z");
-        const group = new WireGroup(targetOutputs);
-        while (group.output() === "NOT_READY") {
-            gates.forEach(gate => {
-                gate.output();
-            });
+        const inputX = wires.filter(w => w.id[0] === "x");
+        const inputY = wires.filter(w => w.id[0] === "y");
 
+        const z = new WireGroup(targetOutputs);
+        const x = new WireGroup(inputX);
+        const y = new WireGroup(inputY);
+
+        let gl = gates.length;
+        console.log(gl);
+        for (let i = 0; i < gl; i++) {
+            for (let j = i + 1; j < gl; j++) {
+                swapOutputWire(i, j);
+                run(x, y, z);
+            }
         }
-        console.log(group.getDecimal())
-
     }
 }
